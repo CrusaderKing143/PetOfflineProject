@@ -1,21 +1,27 @@
 using System;
-using PetOffline.Core;
 using UnityEngine;
 
-namespace PetOffline.Gameplay
+namespace PetOffline
 {
-    [RequireComponent(typeof(Rigidbody2D), typeof(Collider2D))]
+    [RequireComponent(typeof(Rigidbody2D), typeof(Collider2D), typeof(PlayerAnimatorDriver))]
     public sealed class PlayerController : MonoBehaviour
     {
-        [SerializeField] private PlayerConfig config;
-        [SerializeField] private CarryableConfig carryableConfig;
-        [SerializeField] private Rigidbody2D body;
-        [SerializeField] private Collider2D bodyCollider;
-        [SerializeField] private PlayerAnimatorDriver animatorDriver;
+        [Header("Movement")]
+        [SerializeField, Min(0.1f)] private float moveSpeed = 2.8f;
+        [SerializeField, Min(0.01f)] private float dashDuration = 0.25f;
+        [SerializeField, Min(1f)] private float dashSpeedMultiplier = 2.5f;
+        [SerializeField, Min(0f)] private float dashCooldown = 1f;
+        [SerializeField, Range(0.1f, 1f)] private float isometricVerticalScale = 0.5f;
+
+        [Header("Interaction")]
+        [SerializeField, Min(0.1f)] private float interactionRadius = 1f;
+        [SerializeField, Min(0.1f)] private float dropDistance = 0.65f;
         [SerializeField] private Transform carryAnchor;
         [SerializeField] private LayerMask interactionMask = ~0;
 
         private readonly RaycastHit2D[] dashHits = new RaycastHit2D[12];
+        private Rigidbody2D body;
+        private PlayerAnimatorDriver animatorDriver;
         private Vector2 moveDirection;
         private Vector2 lastDirection = Vector2.down;
         private float dashRemaining;
@@ -23,19 +29,19 @@ namespace PetOffline.Gameplay
         private float slideRemaining;
         private float slideSpeed;
         private Vector2 slideDirection;
-        private Vector2[] autoPath;
+        private Vector2[] autoPath = Array.Empty<Vector2>();
         private int autoPathIndex;
         private Action autoComplete;
 
         public Carryable HeldItem { get; private set; }
-        public Collider2D BodyCollider => bodyCollider;
         public bool IsLying { get; private set; }
         public bool IsSliding => slideRemaining > 0f;
-        public bool IsInCutscene => autoPath != null;
-        public event Action Barked;
+        public bool IsInCutscene => autoPathIndex < autoPath.Length;
 
         private void Awake()
         {
+            body = GetComponent<Rigidbody2D>();
+            animatorDriver = GetComponent<PlayerAnimatorDriver>();
             body.gravityScale = 0f;
             body.freezeRotation = true;
         }
@@ -59,7 +65,7 @@ namespace PetOffline.Gameplay
             RefreshAnimation(velocity);
         }
 
-        public void ApplyInput(LevelInputFrame input, bool movementAllowed)
+        public void ApplyInput(PlayerInput input, bool movementAllowed)
         {
             if (!movementAllowed || IsInCutscene)
             {
@@ -97,7 +103,7 @@ namespace PetOffline.Gameplay
             }
 
             Carryable nearest = FindNearestCarryable();
-            if (nearest == null)
+            if (!nearest)
             {
                 return false;
             }
@@ -109,7 +115,6 @@ namespace PetOffline.Gameplay
 
         public void Bark()
         {
-            Barked?.Invoke();
             if (HeldItem != null && HeldItem.DropOnBark)
             {
                 DropHeldItem();
@@ -123,8 +128,8 @@ namespace PetOffline.Gameplay
                 return;
             }
 
-            Vector2 dropPosition = body.position + lastDirection * carryableConfig.DropDistance;
-            HeldItem.Drop(dropPosition);
+            Vector2 position = body.position + lastDirection * dropDistance;
+            HeldItem.Drop(position);
             HeldItem = null;
         }
 
@@ -133,7 +138,8 @@ namespace PetOffline.Gameplay
             moveDirection = Vector2.zero;
             dashRemaining = 0f;
             slideRemaining = 0f;
-            autoPath = null;
+            autoPath = Array.Empty<Vector2>();
+            autoPathIndex = 0;
             body.position = position;
             body.velocity = Vector2.zero;
         }
@@ -179,8 +185,9 @@ namespace PetOffline.Gameplay
                 return Vector2.zero;
             }
 
-            float speed = config.MoveSpeed * (HeldItem == null ? 1f : HeldItem.MoveMultiplier);
-            return moveDirection * speed * (dashRemaining > 0f ? config.DashSpeedMultiplier : 1f);
+            float multiplier = HeldItem == null ? 1f : HeldItem.MoveMultiplier;
+            float dash = dashRemaining > 0f ? dashSpeedMultiplier : 1f;
+            return moveDirection * moveSpeed * multiplier * dash;
         }
 
         private void TryDash()
@@ -191,15 +198,15 @@ namespace PetOffline.Gameplay
                 return;
             }
 
-            dashRemaining = config.DashDuration;
-            dashCooldownRemaining = config.DashCooldown;
+            dashRemaining = dashDuration;
+            dashCooldownRemaining = dashCooldown;
         }
 
         private Vector2 ToIsometric(Vector2 input)
         {
             Vector2 result = new Vector2(
                 input.x - input.y,
-                (input.x + input.y) * config.IsometricVerticalScale);
+                (input.x + input.y) * isometricVerticalScale);
             return result.sqrMagnitude > 1f ? result.normalized : result;
         }
 
@@ -213,9 +220,9 @@ namespace PetOffline.Gameplay
 
             float distance = delta.magnitude;
             int count = body.Cast(delta.normalized, dashHits, distance);
-            for (int i = 0; i < count; i++)
+            for (int index = 0; index < count; index++)
             {
-                distance = Mathf.Min(distance, Mathf.Max(0f, dashHits[i].distance - 0.02f));
+                distance = Mathf.Min(distance, Mathf.Max(0f, dashHits[index].distance - 0.02f));
             }
 
             body.MovePosition(body.position + delta.normalized * distance);
@@ -223,13 +230,14 @@ namespace PetOffline.Gameplay
 
         private Carryable FindNearestCarryable()
         {
-            Collider2D[] hits = Physics2D.OverlapCircleAll(body.position, config.InteractionRadius, interactionMask);
+            Collider2D[] hits = Physics2D.OverlapCircleAll(
+                body.position, interactionRadius, interactionMask);
             Carryable nearest = null;
             float nearestDistance = float.MaxValue;
             foreach (Collider2D hit in hits)
             {
                 Carryable item = hit.GetComponentInParent<Carryable>();
-                if (item == null || !item.IsAvailable || item.IsHeld)
+                if (!item || !item.IsAvailable || item.IsHeld)
                 {
                     continue;
                 }
@@ -247,7 +255,7 @@ namespace PetOffline.Gameplay
 
         private bool MoveAlongAutoPath()
         {
-            if (autoPath == null || autoPathIndex >= autoPath.Length)
+            if (!IsInCutscene)
             {
                 return false;
             }
@@ -260,7 +268,7 @@ namespace PetOffline.Gameplay
                 return true;
             }
 
-            Vector2 velocity = delta.normalized * config.MoveSpeed;
+            Vector2 velocity = delta.normalized * moveSpeed;
             body.MovePosition(body.position + velocity * Time.fixedDeltaTime);
             lastDirection = velocity.normalized;
             RefreshAnimation(velocity);
@@ -275,7 +283,8 @@ namespace PetOffline.Gameplay
                 return;
             }
 
-            autoPath = null;
+            autoPath = Array.Empty<Vector2>();
+            autoPathIndex = 0;
             Action callback = autoComplete;
             autoComplete = null;
             callback?.Invoke();
@@ -283,9 +292,15 @@ namespace PetOffline.Gameplay
 
         private void RefreshAnimation(Vector2 velocity)
         {
-            PlayerCarryStyle style = HeldItem == null ? PlayerCarryStyle.Standard : HeldItem.CarryStyle;
-            bool moving = velocity.sqrMagnitude > 0.001f;
-            animatorDriver.Refresh(lastDirection, moving, dashRemaining > 0f, IsLying, style);
+            PlayerCarryStyle style = HeldItem == null
+                ? PlayerCarryStyle.Standard
+                : HeldItem.CarryStyle;
+            animatorDriver.Refresh(
+                lastDirection,
+                velocity.sqrMagnitude > 0.001f,
+                dashRemaining > 0f,
+                IsLying,
+                style);
         }
     }
 }

@@ -1,12 +1,17 @@
 using UnityEngine;
 
-namespace PetOffline.Gameplay
+namespace PetOffline
 {
     [RequireComponent(typeof(SpriteRenderer))]
     public sealed class YAxisSorter : MonoBehaviour
     {
-        [SerializeField] private SpriteRenderer targetRenderer;
         [SerializeField] private int offset;
+        private SpriteRenderer targetRenderer;
+
+        private void Awake()
+        {
+            targetRenderer = GetComponent<SpriteRenderer>();
+        }
 
         private void LateUpdate()
         {

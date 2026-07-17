@@ -153,7 +153,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9baf07d20ee79c34e8cfe7cc300d0754, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  zoneCollider: {fileID: 52119326}
 --- !u!61 &52119326
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -687,8 +686,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d6d0dbee28bd89c47b4fb0880f7d8be5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  config: {fileID: 11400000, guid: 142457be936622343a09c78d7a7be450, type: 2}
-  openingDialogue: {fileID: 11400000, guid: f100982f774c32c4aa5d7affd9894963, type: 2}
+  shoesHoldSeconds: 2
+  firstBossCallSeconds: 14
+  laterBossCallSeconds: 26
+  responseWindowSeconds: 3.6
+  safeWindowSeconds: 3
+  alertSeconds: 7
   player: {fileID: 956203636}
   shoes: {fileID: 2095039040}
   pillow: {fileID: 1226021951}
@@ -778,9 +781,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12b91c896ccd94a40bd5f7cbfe265506, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  config: {fileID: 11400000, guid: 32391a81a5c6d20458be6217a36465f8, type: 2}
   sensorHead: {fileID: 1349874920}
   target: {fileID: 956203643}
+  distance: 12
+  halfAngle: 30
+  minimumScanAngle: -35
+  maximumScanAngle: 35
+  scanDegreesPerSecond: 18
+  discoveryDuration: 1.2
+  obstructionMask:
+    serializedVersion: 2
+    m_Bits: 256
 --- !u!1 &748415614
 GameObject:
   m_ObjectHideFlags: 0
@@ -952,9 +963,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12b91c896ccd94a40bd5f7cbfe265506, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  config: {fileID: 11400000, guid: 32391a81a5c6d20458be6217a36465f8, type: 2}
   sensorHead: {fileID: 1815533554}
   target: {fileID: 956203643}
+  distance: 12
+  halfAngle: 30
+  minimumScanAngle: -35
+  maximumScanAngle: 35
+  scanDegreesPerSecond: 18
+  discoveryDuration: 1.2
+  obstructionMask:
+    serializedVersion: 2
+    m_Bits: 256
 --- !u!4 &753374621
 Transform:
   m_ObjectHideFlags: 0
@@ -1036,8 +1055,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5dd0962764582e4eaeb0f26bee9133c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  body: {fileID: 925754479}
-  animator: {fileID: 925754478}
   waypoints:
   - {fileID: 1598362386}
   - {fileID: 1180753443}
@@ -1100,7 +1117,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 636b3b491ad71cc4aa5d41264f8722ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetRenderer: {fileID: 925754482}
   offset: 15
 --- !u!58 &925754481
 CircleCollider2D:
@@ -1335,11 +1351,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9332c1662d16a44498e8446968fb3a90, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  config: {fileID: 11400000, guid: 8fee342421bd34f4d8a11ee8fbe9abf8, type: 2}
-  carryableConfig: {fileID: 11400000, guid: e5c79cb175aa63146a17bc29a8f28b2f, type: 2}
-  body: {fileID: 956203640}
-  bodyCollider: {fileID: 956203639}
-  animatorDriver: {fileID: 956203637}
+  moveSpeed: 2.8
+  dashDuration: 0.25
+  dashSpeedMultiplier: 2.5
+  dashCooldown: 1
+  isometricVerticalScale: 0.5
+  interactionRadius: 1
+  dropDistance: 0.65
   carryAnchor: {fileID: 631589152}
   interactionMask:
     serializedVersion: 2
@@ -1356,7 +1374,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b129a63fd2bd7164fa6ce05cdee3b7e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  animator: {fileID: 956203638}
 --- !u!95 &956203638
 Animator:
   serializedVersion: 4
@@ -1426,7 +1443,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 636b3b491ad71cc4aa5d41264f8722ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetRenderer: {fileID: 956203642}
   offset: 20
 --- !u!212 &956203642
 SpriteRenderer:
@@ -1634,13 +1650,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4b37d7a61fef9d4dacfe6fea4690e8c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  id: 1
   carryStyle: 2
-  config: {fileID: 11400000, guid: e5c79cb175aa63146a17bc29a8f28b2f, type: 2}
   dropOnBark: 1
-  body: {fileID: 1226021954}
-  itemCollider: {fileID: 1226021953}
-  itemRenderer: {fileID: 1226021952}
+  pillowMoveMultiplier: 0.6
+  droppedLinearDrag: 2
 --- !u!212 &1226021952
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -1752,7 +1765,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 636b3b491ad71cc4aa5d41264f8722ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetRenderer: {fileID: 1226021952}
   offset: 10
 --- !u!4 &1226021956
 Transform:
@@ -1972,7 +1984,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9baf07d20ee79c34e8cfe7cc300d0754, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  zoneCollider: {fileID: 1506312659}
 --- !u!61 &1506312659
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -2301,7 +2312,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1645149235}
   - component: {fileID: 1645149237}
-  - component: {fileID: 1645149236}
+  - component: {fileID: 1645149238}
   m_Layer: 9
   m_Name: BananaSlipZone
   m_TagString: Untagged
@@ -2324,22 +2335,6 @@ Transform:
   m_Father: {fileID: 2090350922}
   m_RootOrder: 15
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1645149236
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1645149234}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5a8065455ed3ebe4fb2a7cb336f799f4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  banana: {fileID: 0}
-  playerSlideDirection: {x: 0.9438583, y: -0.3303504}
-  playerSlideSeconds: 0.7
-  playerSlideSpeed: 5
 --- !u!61 &1645149237
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -2366,6 +2361,21 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 1.3, y: 0.85}
   m_EdgeRadius: 0
+--- !u!114 &1645149238
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1645149234}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da10a18db8164e808529bb8fb636565e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  slideDirection: {x: 0.9438583, y: -0.3303504}
+  slideSeconds: 0.7
+  slideSpeed: 5
 --- !u!1 &1808135103
 GameObject:
   m_ObjectHideFlags: 0
@@ -2794,13 +2804,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4b37d7a61fef9d4dacfe6fea4690e8c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  id: 0
   carryStyle: 1
-  config: {fileID: 11400000, guid: e5c79cb175aa63146a17bc29a8f28b2f, type: 2}
   dropOnBark: 0
-  body: {fileID: 2095039043}
-  itemCollider: {fileID: 2095039042}
-  itemRenderer: {fileID: 2095039041}
+  pillowMoveMultiplier: 0.6
+  droppedLinearDrag: 2
 --- !u!212 &2095039041
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -2912,7 +2919,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 636b3b491ad71cc4aa5d41264f8722ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetRenderer: {fileID: 2095039041}
   offset: 10
 --- !u!4 &2095039045
 Transform:

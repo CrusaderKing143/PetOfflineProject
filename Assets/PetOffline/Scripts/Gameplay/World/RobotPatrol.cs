@@ -1,16 +1,16 @@
 using System;
 using UnityEngine;
 
-namespace PetOffline.Gameplay
+namespace PetOffline
 {
-    [RequireComponent(typeof(Rigidbody2D))]
+    [RequireComponent(typeof(Rigidbody2D), typeof(Animator))]
     public sealed class RobotPatrol : MonoBehaviour
     {
-        [SerializeField] private Rigidbody2D body;
-        [SerializeField] private Animator animator;
-        [SerializeField] private Transform[] waypoints;
+        [SerializeField] private Transform[] waypoints = Array.Empty<Transform>();
         [SerializeField, Min(0.1f)] private float speed = 1.4f;
 
+        private Rigidbody2D body;
+        private Animator animator;
         private int waypointIndex;
         private Vector2 homePosition;
         private Vector2 slipTarget;
@@ -19,11 +19,12 @@ namespace PetOffline.Gameplay
         private bool paused;
         private string animationState;
 
-        public bool IsSlipping => slipping;
         public event Action SlipFinished;
 
         private void Awake()
         {
+            body = GetComponent<Rigidbody2D>();
+            animator = GetComponent<Animator>();
             homePosition = body.position;
             body.gravityScale = 0f;
             body.freezeRotation = true;
@@ -39,10 +40,8 @@ namespace PetOffline.Gameplay
             if (slipping)
             {
                 MoveToward(slipTarget, slipSpeed, true);
-                return;
             }
-
-            if (waypoints.Length > 0)
+            else if (waypoints.Length > 0)
             {
                 Patrol();
             }
@@ -71,8 +70,7 @@ namespace PetOffline.Gameplay
 
         private void Patrol()
         {
-            Vector2 target = waypoints[waypointIndex].position;
-            if (MoveToward(target, speed, false))
+            if (MoveToward(waypoints[waypointIndex].position, speed, false))
             {
                 waypointIndex = (waypointIndex + 1) % waypoints.Length;
             }

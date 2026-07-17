@@ -2,20 +2,12 @@
   "name": "PetOffline.Tests.Editor",
   "rootNamespace": "PetOffline.Tests",
   "references": [
-    "PetOffline.Core",
-    "PetOffline.Gameplay"
+    "PetOffline"
   ],
   "includePlatforms": [
     "Editor"
   ],
-  "excludePlatforms": [],
-  "allowUnsafeCode": false,
-  "overrideReferences": false,
-  "precompiledReferences": [],
   "autoReferenced": false,
-  "defineConstraints": [],
-  "versionDefines": [],
-  "noEngineReferences": false,
   "optionalUnityReferences": [
     "TestAssemblies"
   ]

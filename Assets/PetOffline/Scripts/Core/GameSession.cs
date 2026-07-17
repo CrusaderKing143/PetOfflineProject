@@ -1,178 +1,169 @@
-using System;
+using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
-namespace PetOffline.Core
+namespace PetOffline
 {
     [DisallowMultipleComponent]
-    public sealed partial class GameSession : MonoBehaviour,
-        IGameCommandSink,
-        ILevelHost,
-        IGameSessionView
+    [RequireComponent(typeof(GameUI))]
+    public sealed class GameSession : MonoBehaviour
     {
-        [SerializeField] private SceneFlowService sceneFlow;
-        [SerializeField] private string saveKey = StorySaveService.DefaultPlayerPrefsKey;
+        private const string StartScene = "StartPanel";
+        private const string Day1Scene = "Main1";
+        private const string Day2Scene = "Main2";
 
-        private StorySaveService _saveService;
-        private ILevelRuntime _runtime;
-        private ILevelViewModel _viewModel;
-        private bool _isTransitioning;
-        private bool _isInputLocked;
-        private bool _paused;
-        private bool _runtimeCommandPending;
-        private LevelId _currentLevel;
-        private string _lastError = string.Empty;
+        private Scene worldScene;
+        private LevelController level;
+        private bool busy;
+        private bool paused;
 
-        public event Action Changed;
-
-        public bool IsAtTitle => _currentLevel == LevelId.None;
-
-        public bool IsBusy => _isTransitioning || (sceneFlow != null && sceneFlow.IsBusy);
-
-        public bool Paused => _paused;
-
-        public bool IsPaused => _paused;
-
-        public bool IsInputLocked => _isInputLocked || IsBusy;
-
-        public bool CanContinue => _saveService != null && _saveService.Progress.Day1Complete;
-
-        public bool CanRouteInput => _runtime != null && !IsInputLocked;
-
-        public string LastError => _lastError;
-
-        public LevelId CurrentLevel => _currentLevel;
-
-        public ILevelViewModel CurrentViewModel => _viewModel;
-
-        public StoryProgress Story => _saveService != null
-            ? _saveService.Progress
-            : StoryProgress.Empty;
+        public GameUI UI { get; private set; }
+        public bool IsAtTitle => !worldScene.IsValid();
+        public bool IsBusy => busy;
+        public bool IsPaused => paused;
+        public LevelController CurrentLevel => level;
 
         private void Awake()
         {
-            if (sceneFlow == null)
-            {
-                sceneFlow = GetComponent<SceneFlowService>();
-            }
-
-            _saveService = new StorySaveService(saveKey);
-            _saveService.Load();
-            ResetPauseState();
+            UI = GetComponent<GameUI>();
+            Time.timeScale = 1f;
         }
 
         private void Start()
         {
-            NotifyChanged();
+            UI.ShowTitle();
+        }
+
+        private void Update()
+        {
+            if (busy || !level)
+            {
+                return;
+            }
+
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                TogglePause();
+                return;
+            }
+
+            if (!paused)
+            {
+                level.HandleInput(PlayerInput.Read());
+            }
         }
 
         private void OnDestroy()
         {
-            ReleaseRuntime();
-            ResetPauseState();
-        }
-
-        public void RouteInput(LevelInputFrame input)
-        {
-            if (!CanRouteInput)
-            {
-                return;
-            }
-
-            if (input.PausePressed)
-            {
-                SetPaused(!_paused);
-                return;
-            }
-
-            if (_paused)
-            {
-                return;
-            }
-
-            try
-            {
-                _runtime.HandleInput(input);
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception);
-                ReturnToTitleAfterFailure("The level stopped responding to input.");
-            }
-        }
-
-        public void SetPaused(bool paused)
-        {
-            if (_paused == paused)
-            {
-                return;
-            }
-
-            if (paused && !CanPause())
-            {
-                return;
-            }
-
-            _paused = paused;
-            Time.timeScale = paused ? 0f : 1f;
-            NotifyChanged();
-        }
-
-        public void CompleteLevel(LevelId level, FinalChoice choice)
-        {
-            if (IsBusy || _runtime == null || level != _currentLevel)
-            {
-                return;
-            }
-
-            if (level == LevelId.Day1)
-            {
-                _saveService.MarkDay1Complete();
-                BeginLoadLevel(LevelId.Day2);
-                return;
-            }
-
-            if (level == LevelId.Day2 && IsEndingChoice(choice))
-            {
-                _saveService.MarkDay2Complete(choice);
-                _runtimeCommandPending = false;
-                NotifyChanged();
-            }
-        }
-
-        private bool CanPause()
-        {
-            return !IsBusy
-                && !_runtimeCommandPending
-                && _viewModel != null
-                && _viewModel.UiMode == LevelUiMode.Gameplay;
-        }
-
-        private void HandleViewModelChanged()
-        {
-            _runtimeCommandPending = false;
-            if (_paused && !CanPause())
-            {
-                ResetPauseState();
-            }
-
-            NotifyChanged();
-        }
-
-        private void NotifyChanged()
-        {
-            Changed?.Invoke();
-        }
-
-        private void ResetPauseState()
-        {
-            _paused = false;
             Time.timeScale = 1f;
         }
 
-        private static bool IsEndingChoice(FinalChoice choice)
+        public void NewGame()
         {
-            return choice == FinalChoice.RestoreConnection
-                || choice == FinalChoice.KeepQuiet;
+            StartLevel(Day1Scene);
+        }
+
+        public void Restart()
+        {
+            StartLevel(Day1Scene);
+        }
+
+        public void LoadDay2()
+        {
+            StartLevel(Day2Scene);
+        }
+
+        public void ContinueReport()
+        {
+            if (!busy && !paused && level)
+            {
+                level.ContinueReport();
+            }
+        }
+
+        public void SubmitChoice(FinalChoice choice)
+        {
+            if (!busy && !paused && level)
+            {
+                level.SubmitChoice(choice);
+            }
+        }
+
+        public void ReturnTitle()
+        {
+            if (!busy && worldScene.IsValid())
+            {
+                StartCoroutine(ReturnTitleRoutine());
+            }
+        }
+
+        private void StartLevel(string sceneName)
+        {
+            if (!busy)
+            {
+                StartCoroutine(LoadLevelRoutine(sceneName));
+            }
+        }
+
+        private IEnumerator LoadLevelRoutine(string sceneName)
+        {
+            BeginTransition();
+            yield return UnloadWorld();
+            yield return SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+
+            worldScene = SceneManager.GetSceneByName(sceneName);
+            SceneManager.SetActiveScene(worldScene);
+            level = FindObjectOfType<LevelController>();
+            if (!level)
+            {
+                Debug.LogError($"Scene '{sceneName}' has no LevelController.");
+                yield return ReturnTitleRoutine();
+                yield break;
+            }
+
+            level.Initialize(this);
+            busy = false;
+        }
+
+        private IEnumerator ReturnTitleRoutine()
+        {
+            BeginTransition();
+            yield return UnloadWorld();
+            worldScene = default;
+            SceneManager.SetActiveScene(SceneManager.GetSceneByName(StartScene));
+            busy = false;
+            UI.ShowTitle();
+        }
+
+        private IEnumerator UnloadWorld()
+        {
+            if (worldScene.IsValid() && worldScene.isLoaded)
+            {
+                yield return SceneManager.UnloadSceneAsync(worldScene);
+            }
+        }
+
+        private void BeginTransition()
+        {
+            busy = true;
+            level = null;
+            SetPaused(false);
+            UI.ShowLoading();
+        }
+
+        private void TogglePause()
+        {
+            if (level.CanPause)
+            {
+                SetPaused(!paused);
+            }
+        }
+
+        private void SetPaused(bool value)
+        {
+            paused = value;
+            Time.timeScale = value ? 0f : 1f;
+            UI.ShowPause(value);
         }
     }
 }

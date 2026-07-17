@@ -1,39 +1,29 @@
-using System;
 using UnityEngine;
 
-namespace PetOffline.Gameplay
+namespace PetOffline
 {
     [RequireComponent(typeof(Collider2D))]
     public sealed class TriggerZone : MonoBehaviour
     {
+        private const int PlayerLayer = 10;
         private int playerContacts;
 
         public bool ContainsPlayer => playerContacts > 0;
-        public event Action<PlayerController> PlayerEntered;
-        public event Action<PlayerController> PlayerExited;
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            PlayerController player = other.GetComponentInParent<PlayerController>();
-            if (player == null)
+            if (other.gameObject.layer == PlayerLayer)
             {
-                return;
+                playerContacts++;
             }
-
-            playerContacts++;
-            PlayerEntered?.Invoke(player);
         }
 
         private void OnTriggerExit2D(Collider2D other)
         {
-            PlayerController player = other.GetComponentInParent<PlayerController>();
-            if (player == null)
+            if (other.gameObject.layer == PlayerLayer)
             {
-                return;
+                playerContacts = Mathf.Max(0, playerContacts - 1);
             }
-
-            playerContacts = Mathf.Max(0, playerContacts - 1);
-            PlayerExited?.Invoke(player);
         }
     }
 }

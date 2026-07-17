@@ -1,13 +1,18 @@
 using UnityEngine;
 
-namespace PetOffline.Gameplay
+namespace PetOffline
 {
+    [RequireComponent(typeof(Animator))]
     public sealed class PlayerAnimatorDriver : MonoBehaviour
     {
-        [SerializeField] private Animator animator;
-
+        private Animator animator;
         private int direction = 4;
         private string currentState;
+
+        private void Awake()
+        {
+            animator = GetComponent<Animator>();
+        }
 
         public void Refresh(
             Vector2 movement,

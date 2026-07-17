@@ -1,0 +1,8 @@
+{
+  "name": "PetOffline",
+  "rootNamespace": "PetOffline",
+  "references": [
+    "Unity.ugui"
+  ],
+  "autoReferenced": true
+}

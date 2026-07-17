@@ -1,14 +1,22 @@
 using System;
-using PetOffline.Core;
 using UnityEngine;
 
-namespace PetOffline.Gameplay
+namespace PetOffline
 {
     public sealed class CameraSensor : MonoBehaviour
     {
-        [SerializeField] private CameraScanConfig config;
+        [Header("Scan")]
         [SerializeField] private Transform sensorHead;
         [SerializeField] private Transform target;
+        [SerializeField, Min(0.1f)] private float distance = 12f;
+        [SerializeField, Range(1f, 89f)] private float halfAngle = 30f;
+        [SerializeField] private float minimumScanAngle = -35f;
+        [SerializeField] private float maximumScanAngle = 35f;
+        [SerializeField, Min(0f)] private float scanDegreesPerSecond = 18f;
+
+        [Header("Detection")]
+        [SerializeField, Min(0.05f)] private float discoveryDuration = 1.2f;
+        [SerializeField] private LayerMask obstructionMask = 1 << 8;
 
         private float scanDirection = 1f;
         private float scanAngle;
@@ -16,7 +24,6 @@ namespace PetOffline.Gameplay
         private float detectionMultiplier = 1f;
         private bool detectionEnabled = true;
 
-        public CameraUiState State { get; private set; } = CameraUiState.Scanning;
         public event Action Discovered;
 
         private void Update()
@@ -25,32 +32,24 @@ namespace PetOffline.Gameplay
             UpdateDetection();
         }
 
-        public void SetTarget(Transform value)
-        {
-            target = value;
-        }
-
         public void SetDetectionEnabled(bool value)
         {
             detectionEnabled = value;
             if (!value)
             {
                 visibleSeconds = 0f;
-                State = CameraUiState.Safe;
             }
         }
 
         public void SetAlertMultiplier(float multiplier)
         {
             detectionMultiplier = Mathf.Max(0.1f, multiplier);
-            State = multiplier > 1f ? CameraUiState.Alert : CameraUiState.Scanning;
         }
 
         public void SetOffline(bool value)
         {
             enabled = !value;
             visibleSeconds = 0f;
-            State = value ? CameraUiState.Offline : CameraUiState.Scanning;
         }
 
         public void ResetSensor()
@@ -59,17 +58,16 @@ namespace PetOffline.Gameplay
             scanAngle = 0f;
             scanDirection = 1f;
             detectionMultiplier = 1f;
-            State = CameraUiState.Scanning;
             ApplyHeadRotation();
         }
 
         private void UpdateScan()
         {
-            scanAngle += scanDirection * config.ScanDegreesPerSecond * Time.deltaTime;
-            if (scanAngle >= config.MaximumScanAngle || scanAngle <= config.MinimumScanAngle)
+            scanAngle += scanDirection * scanDegreesPerSecond * Time.deltaTime;
+            if (scanAngle >= maximumScanAngle || scanAngle <= minimumScanAngle)
             {
                 scanDirection *= -1f;
-                scanAngle = Mathf.Clamp(scanAngle, config.MinimumScanAngle, config.MaximumScanAngle);
+                scanAngle = Mathf.Clamp(scanAngle, minimumScanAngle, maximumScanAngle);
             }
 
             ApplyHeadRotation();
@@ -77,15 +75,14 @@ namespace PetOffline.Gameplay
 
         private void UpdateDetection()
         {
-            if (!detectionEnabled || target == null || !CanSeeTarget())
+            if (!detectionEnabled || !CanSeeTarget())
             {
                 visibleSeconds = 0f;
                 return;
             }
 
             visibleSeconds += Time.deltaTime * detectionMultiplier;
-            State = CameraUiState.Alert;
-            if (visibleSeconds < config.DiscoveryDuration)
+            if (visibleSeconds < discoveryDuration)
             {
                 return;
             }
@@ -98,22 +95,15 @@ namespace PetOffline.Gameplay
         {
             Vector2 origin = sensorHead.position;
             Vector2 toTarget = (Vector2)target.position - origin;
-            if (toTarget.magnitude > config.Distance)
-            {
-                return false;
-            }
-
-            float angle = Vector2.Angle(sensorHead.up, toTarget);
-            if (angle > config.HalfAngle)
+            if (toTarget.magnitude > distance
+                || Vector2.Angle(sensorHead.up, toTarget) > halfAngle)
             {
                 return false;
             }
 
             RaycastHit2D obstruction = Physics2D.Linecast(
-                origin,
-                target.position,
-                config.ObstructionMask);
-            return obstruction.collider == null;
+                origin, target.position, obstructionMask);
+            return !obstruction;
         }
 
         private void ApplyHeadRotation()
@@ -123,16 +113,16 @@ namespace PetOffline.Gameplay
 
         private void OnDrawGizmosSelected()
         {
-            if (sensorHead == null || config == null)
+            if (!sensorHead)
             {
                 return;
             }
 
             Gizmos.color = Color.yellow;
-            Vector3 left = Quaternion.Euler(0f, 0f, config.HalfAngle) * sensorHead.up;
-            Vector3 right = Quaternion.Euler(0f, 0f, -config.HalfAngle) * sensorHead.up;
-            Gizmos.DrawRay(sensorHead.position, left * config.Distance);
-            Gizmos.DrawRay(sensorHead.position, right * config.Distance);
+            Vector3 left = Quaternion.Euler(0f, 0f, halfAngle) * sensorHead.up;
+            Vector3 right = Quaternion.Euler(0f, 0f, -halfAngle) * sensorHead.up;
+            Gizmos.DrawRay(sensorHead.position, left * distance);
+            Gizmos.DrawRay(sensorHead.position, right * distance);
         }
     }
 }

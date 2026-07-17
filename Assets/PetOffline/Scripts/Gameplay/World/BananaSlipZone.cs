@@ -1,11 +1,14 @@
 using System;
 using UnityEngine;
 
-namespace PetOffline.Gameplay
+namespace PetOffline
 {
     [RequireComponent(typeof(Collider2D))]
     public sealed class BananaSlipZone : MonoBehaviour
     {
+        private const int PlayerLayer = 10;
+        private const int RobotLayer = 12;
+
         [SerializeField] private Carryable banana;
         [SerializeField] private Vector2 playerSlideDirection = Vector2.right;
         [SerializeField, Min(0.1f)] private float playerSlideSeconds = 0.7f;
@@ -21,29 +24,21 @@ namespace PetOffline.Gameplay
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            if (!armed)
+            if (!armed || banana.IsHeld || !banana.IsAvailable)
             {
                 return;
             }
 
-            PlayerController player = other.GetComponentInParent<PlayerController>();
-            if (player != null && BananaIsPlaced())
+            if (other.gameObject.layer == PlayerLayer)
             {
-                player.StartSlide(playerSlideDirection, playerSlideSeconds, playerSlideSpeed);
-                return;
+                other.GetComponentInParent<PlayerController>().StartSlide(
+                    playerSlideDirection, playerSlideSeconds, playerSlideSpeed);
             }
-
-            RobotPatrol robot = other.GetComponentInParent<RobotPatrol>();
-            if (robot != null && banana != null && BananaIsPlaced())
+            else if (other.gameObject.layer == RobotLayer)
             {
                 armed = false;
-                RobotSlipped?.Invoke(robot);
+                RobotSlipped?.Invoke(other.GetComponentInParent<RobotPatrol>());
             }
-        }
-
-        private bool BananaIsPlaced()
-        {
-            return banana == null || (!banana.IsHeld && banana.IsAvailable);
         }
     }
 }

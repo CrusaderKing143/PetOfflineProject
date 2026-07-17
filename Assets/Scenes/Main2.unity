@@ -152,9 +152,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12b91c896ccd94a40bd5f7cbfe265506, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  config: {fileID: 11400000, guid: 32391a81a5c6d20458be6217a36465f8, type: 2}
   sensorHead: {fileID: 1540212366}
   target: {fileID: 1236452528}
+  distance: 12
+  halfAngle: 30
+  minimumScanAngle: -35
+  maximumScanAngle: 35
+  scanDegreesPerSecond: 18
+  discoveryDuration: 1.2
+  obstructionMask:
+    serializedVersion: 2
+    m_Bits: 256
 --- !u!4 &52119326
 Transform:
   m_ObjectHideFlags: 0
@@ -755,8 +763,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50fc47a1726873e4bbf54d99c715bfec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  config: {fileID: 11400000, guid: 65a465adbfcf24348bea2f37385b20e2, type: 2}
-  openingDialogue: {fileID: 11400000, guid: c116e19a8f2e14a45b7c4b54d874ef93, type: 2}
+  firstSunSeconds: 10
+  ignoredConfirmationSeconds: 9
+  backupLessonSeconds: 10
+  finalSunSeconds: 20
+  restoreConfirmationSeconds: 4
+  quietEndingSeconds: 9
   player: {fileID: 1236452521}
   banana: {fileID: 752244924}
   balconySunZone: {fileID: 1618457565}
@@ -805,7 +817,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9baf07d20ee79c34e8cfe7cc300d0754, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  zoneCollider: {fileID: 631589153}
 --- !u!61 &631589153
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -1062,13 +1073,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4b37d7a61fef9d4dacfe6fea4690e8c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  id: 2
   carryStyle: 0
-  config: {fileID: 11400000, guid: e5c79cb175aa63146a17bc29a8f28b2f, type: 2}
   dropOnBark: 0
-  body: {fileID: 752244927}
-  itemCollider: {fileID: 752244926}
-  itemRenderer: {fileID: 752244925}
+  pillowMoveMultiplier: 0.6
+  droppedLinearDrag: 2
 --- !u!212 &752244925
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -1180,7 +1188,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 636b3b491ad71cc4aa5d41264f8722ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetRenderer: {fileID: 752244925}
   offset: 10
 --- !u!4 &752244929
 Transform:
@@ -1231,8 +1238,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5dd0962764582e4eaeb0f26bee9133c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  body: {fileID: 753374622}
-  animator: {fileID: 753374621}
   waypoints:
   - {fileID: 1815533554}
   - {fileID: 925754477}
@@ -1296,7 +1301,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 636b3b491ad71cc4aa5d41264f8722ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetRenderer: {fileID: 753374625}
   offset: 15
 --- !u!58 &753374624
 CircleCollider2D:
@@ -1780,9 +1784,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12b91c896ccd94a40bd5f7cbfe265506, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  config: {fileID: 11400000, guid: 32391a81a5c6d20458be6217a36465f8, type: 2}
   sensorHead: {fileID: 1506312658}
   target: {fileID: 1236452528}
+  distance: 12
+  halfAngle: 30
+  minimumScanAngle: -35
+  maximumScanAngle: 35
+  scanDegreesPerSecond: 18
+  discoveryDuration: 1.2
+  obstructionMask:
+    serializedVersion: 2
+    m_Bits: 256
 --- !u!4 &1226021952
 Transform:
   m_ObjectHideFlags: 0
@@ -1834,11 +1846,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9332c1662d16a44498e8446968fb3a90, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  config: {fileID: 11400000, guid: 8fee342421bd34f4d8a11ee8fbe9abf8, type: 2}
-  carryableConfig: {fileID: 11400000, guid: e5c79cb175aa63146a17bc29a8f28b2f, type: 2}
-  body: {fileID: 1236452525}
-  bodyCollider: {fileID: 1236452524}
-  animatorDriver: {fileID: 1236452522}
+  moveSpeed: 2.8
+  dashDuration: 0.25
+  dashSpeedMultiplier: 2.5
+  dashCooldown: 1
+  isometricVerticalScale: 0.5
+  interactionRadius: 1
+  dropDistance: 0.65
   carryAnchor: {fileID: 166934245}
   interactionMask:
     serializedVersion: 2
@@ -1855,7 +1869,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b129a63fd2bd7164fa6ce05cdee3b7e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  animator: {fileID: 1236452523}
 --- !u!95 &1236452523
 Animator:
   serializedVersion: 4
@@ -1925,7 +1938,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 636b3b491ad71cc4aa5d41264f8722ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetRenderer: {fileID: 1236452527}
   offset: 20
 --- !u!212 &1236452527
 SpriteRenderer:

@@ -1,45 +1,20 @@
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 
-namespace PetOffline.Gameplay
+namespace PetOffline
 {
     [RequireComponent(typeof(Collider2D))]
     public sealed class GoalZone : MonoBehaviour
     {
-        [SerializeField] private Collider2D zoneCollider;
-        private readonly HashSet<Carryable> containedItems = new HashSet<Carryable>();
+        private Collider2D zoneCollider;
 
-        public event Action<Carryable> ItemEntered;
-        public event Action<Carryable> ItemExited;
+        private void Awake()
+        {
+            zoneCollider = GetComponent<Collider2D>();
+        }
 
         public bool Contains(Carryable item)
         {
-            return item != null &&
-                   (containedItems.Contains(item) || zoneCollider.OverlapPoint(item.transform.position));
-        }
-
-        public void ResetZone()
-        {
-            containedItems.Clear();
-        }
-
-        private void OnTriggerEnter2D(Collider2D other)
-        {
-            Carryable item = other.GetComponentInParent<Carryable>();
-            if (item != null && containedItems.Add(item))
-            {
-                ItemEntered?.Invoke(item);
-            }
-        }
-
-        private void OnTriggerExit2D(Collider2D other)
-        {
-            Carryable item = other.GetComponentInParent<Carryable>();
-            if (item != null && containedItems.Remove(item))
-            {
-                ItemExited?.Invoke(item);
-            }
+            return zoneCollider.OverlapPoint(item.transform.position);
         }
     }
 }

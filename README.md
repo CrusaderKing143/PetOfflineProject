@@ -1,116 +1,62 @@
 # Pet Offline
 
-Pet Offline is a two-level, Editor-playable Unity teaching project built for
-Unity **2021.3.8f1**, the **Built-in Render Pipeline**, and the **Legacy Input
-Manager**. A first playthrough is designed to take roughly 12–15 minutes.
+这是一个使用 Unity **2021.3.8f1** 制作的两关 2D 教学项目，目标是让新手可以直接顺着代码看懂游戏流程。
 
-The project keeps `StartPanel` loaded as the persistent shell. `Main1` and
-`Main2` are loaded additively and contain world objects only.
+项目使用内置渲染管线、UGUI 和旧版 Input Manager，不需要额外插件。
 
-## Open and play
+## 运行方式
 
-1. Open the project with Unity `2021.3.8f1`.
-2. If the generated scenes or data need to be refreshed, run
-   `Pet Offline > Install Playable Prototype` once.
-3. Open `Assets/Scenes/StartPanel.unity`.
-4. Enter Play Mode and use the English title menu.
+1. 使用 Unity `2021.3.8f1` 打开项目。
+2. 打开 `Assets/Scenes/StartPanel.unity`。
+3. 进入 Play Mode，点击标题页的 `NEW GAME`。
 
-Do not start Play Mode from `Main1` or `Main2`; they intentionally have no
-Camera, AudioListener, EventSystem, or Canvas.
+请不要直接从 `Main1` 或 `Main2` 开始运行。这两个场景只保存关卡世界，摄像机、UI 和输入入口都在 `StartPanel` 中。
 
-## Controls
+## 操作
 
-| Input | Action |
+| 按键 | 功能 |
 | --- | --- |
-| `W / A / S / D` | Move along the isometric axes |
-| `E` | Pick up, drop, interact, or advance dialogue |
-| `Space` | Bark |
-| Hold `Shift` | Lie down / sunbathe in a sun zone |
-| `Q` | Short dash while empty-handed |
-| `Esc` | Pause or resume during world gameplay |
+| `W / A / S / D` | 移动 |
+| `E` | 拿取、放下、互动或推进对话 |
+| `Space` | 吠叫 |
+| 按住 `Shift` | 趴下或晒太阳 |
+| `Q` | 空手冲刺 |
+| `Esc` | 暂停或继续 |
 
-The dash lasts about `0.25s`, uses `2.5x` movement speed, and has a `1s`
-cooldown. It is disabled while carrying, lying down, sliding, in an automatic
-performance, paused, or while input is locked.
+## 游戏流程
 
-## Story flow
+- Day 1：搬运鞋子和枕头、回应老板、躲避摄像头，最后在狗窝吠叫。
+- Day 1 报告演出结束后自动进入 Day 2。
+- Day 2：完成晒太阳、香蕉和扫地机器人、备用摄像头任务，然后选择两个结局之一。
+- 结局页可以重新从 Day 1 开始，或返回标题页。
 
-- **Day 1 / Main1:** move the shoes to Camera A, return the pillow, answer boss
-  calls, avoid Camera B while carrying the current task item, then bark from
-  Latte's bed. Continuing the report starts an in-world ending performance;
-  Day 1 is saved only after that performance finishes.
-- **Day 2 / Main2:** complete the first sun session, respond at the feeder,
-  redirect the robot with a banana, learn about the backup camera, and finish
-  the living-room sun session. The report leads to `Restore Connection` or
-  `Keep Quiet`, and progress is saved only after the selected ending finishes.
+项目不保存进度。关闭游戏、返回标题或重新开始后，都会从 Day 1 开始。
 
-`Continue` is disabled until Day 1 is complete. After that it always starts
-Day 2 from its opening, including after the story has already been completed.
+## 代码入口
 
-## Save rules
+- `GameSession`：读取输入、暂停、切换场景。
+- `GameUI`：控制标题、HUD、对话、报告、选择和结局界面。
+- `Day1Level` / `Day2Level`：按阶段直接执行两关玩法。
+- `PlayerController`：移动、冲刺、携带和自动演出移动。
+- `CameraSensor`、`RobotPatrol` 等小组件：各自只处理一种世界行为。
 
-Story progress is stored as versioned JSON in `PlayerPrefs` under
-`PetOffline.StorySave`. It stores only:
+所有 Inspector 引用都是必填项。场景已经配置完整，运行时代码不会反复为漏配引用兜底。
 
-- Day 1 completion;
-- Day 2 completion;
-- the final choice.
+移动速度、摄像头范围、任务时长等参数直接放在对应组件的 Inspector 中，方便学习和调整。
 
-It never stores an in-level position or partial task state. `Return Title`
-keeps progress. Confirmed `New Game` and ending `Restart` clear it.
+## 场景
 
-## Architecture
-
-Runtime code is split into five assemblies:
-
-- `PetOffline.Core`: contracts, `GameSession`, additive scene flow, input, and
-  versioned story persistence;
-- `PetOffline.Gameplay`: player/world components, Day 1 and Day 2 flow state,
-  runtime orchestration, and ScriptableObject configuration types;
-- `PetOffline.UI`: ViewModel-only presenters and high-level commands;
-- `PetOffline.Editor`: repeatable scene/data installation and validation;
-- `PetOffline.Tests.Editor`: Edit Mode flow and persistence tests.
-
-Gameplay and UI both depend on Core and do not reference one another.
-
-## Validation and tests
-
-- Run `Pet Offline > Validate Project` to check scene order, assembly
-  dependencies, required references, the unique persistent Camera and
-  AudioListener, world-scene isolation, missing scripts, camera origins,
-  robot patrol clearance, and forbidden full-background animation dependencies.
-- Open `Window > General > Test Runner`, select **EditMode**, and run all tests.
-- Use a `1920x1080` or other 16:9 Game view when visually checking colliders,
-  sight lines, foreground sorting, and UI layout.
-
-Before handing off a playable revision, run this Play Mode smoke pass:
-
-1. Confirm the title video loops with its own audio, then double-click each
-   title/report/choice button and verify only one command runs.
-2. Disable and re-enable `UIRoot` during gameplay; the world must keep moving
-   and the restored UI must redraw the current objective and progress.
-3. Complete Day 1, including a Camera B local reset and a boss call; verify the
-   report does not save or load Day 2 until the in-world performance finishes.
-4. Complete Day 2 through the banana/robot impact, backup-camera lesson, final
-   sun session, and both endings; verify each ending saves only after it ends.
-5. Return to title and enter each level again to confirm pause state, dialogue,
-   event subscriptions, robot paths, and camera alerts do not accumulate.
-
-The three Build Settings entries must remain in this order:
+Build Settings 保持以下顺序：
 
 1. `Assets/Scenes/StartPanel.unity`
 2. `Assets/Scenes/Main1.unity`
 3. `Assets/Scenes/Main2.unity`
 
-## Known limits
+三个场景就是项目的唯一来源，直接在 Unity Inspector 中维护，不需要运行场景生成器。
 
-- Editor play only; no Windows build is included.
-- English only; no localization pipeline is included.
-- No mid-level save, manual object pushing, NavMesh, Cinemachine, Input System,
-  external font, or external gameplay art/audio.
-- The opening video's own audio is the only audio source. Gameplay is silent.
-- Full-size 240-frame background animation is deliberately excluded. Both
-  levels use static backgrounds plus independent animated mechanisms to avoid
-  Editor memory spikes.
-- Collider shapes, sight cones, and animation direction mapping are calibrated
-  for the current artwork and fixed orthographic 16:9 view.
+## 验证
+
+在 Unity Test Runner 的 EditMode 页运行 `BeginnerSmokeTests`：
+
+- 检查三个场景没有 Missing Script；
+- 检查标题页能够进入 Day 1 并返回标题页。
