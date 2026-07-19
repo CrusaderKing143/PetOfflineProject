@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Animator))]
@@ -32,6 +33,8 @@ public sealed class DogController : MonoBehaviour
     [SerializeField, Min(0f)] private float runSpeed = 4f;
     [SerializeField, Min(0f)] private float interactionRadius = 1.2f;
     [SerializeField, Min(0f)] private float dropDistance = 0.8f;
+    [SerializeField] private Slider staminaSlider;
+    [SerializeField, Min(0.1f)] private float staminaDuration = 6f;
 
     private readonly List<KeyCode> heldDirectionKeys = new List<KeyCode>(4);
     private DogCarryItemPickup carriedPickup;
@@ -40,6 +43,7 @@ public sealed class DogController : MonoBehaviour
     private int facingDirection = DownRight;
     private bool isLyingDown;
     private bool runMode;
+    private float stamina = 1f;
 
     public DogCarryItemType CarryItemType => carryItemType;
 
@@ -48,6 +52,11 @@ public sealed class DogController : MonoBehaviour
         if (animator == null)
         {
             animator = GetComponent<Animator>();
+        }
+
+        if (staminaSlider != null)
+        {
+            staminaSlider.SetValueWithoutNotify(stamina);
         }
     }
 
@@ -69,8 +78,16 @@ public sealed class DogController : MonoBehaviour
 
         HandleStateKeys(isMoving);
         HandleInteractionKey();
-        Move(movement);
-        UpdateAnimation(isMoving);
+        bool isRunning = IsRunning(isMoving);
+        UpdateStamina(isRunning);
+        if (isRunning && stamina <= 0f)
+        {
+            runMode = false;
+            isRunning = false;
+        }
+
+        Move(movement, isRunning);
+        UpdateAnimation(isMoving, isRunning);
     }
 
     public void SetCarryItem(DogCarryItemType itemType)
@@ -126,7 +143,7 @@ public sealed class DogController : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Q))
+        if (Input.GetKeyDown(KeyCode.Q) && (runMode || stamina > 0f))
         {
             runMode = !runMode;
         }
@@ -213,21 +230,39 @@ public sealed class DogController : MonoBehaviour
         isLyingDown = false;
     }
 
-    private void Move(Vector2 movement)
+    private bool IsRunning(bool isMoving)
+    {
+        return isMoving && !isLyingDown
+            && carryItemType == DogCarryItemType.None
+            && runMode
+            && stamina > 0f;
+    }
+
+    private void UpdateStamina(bool isRunning)
+    {
+        float target = isRunning ? 0f : 1f;
+        float duration = Mathf.Max(staminaDuration, 0.1f);
+        stamina = Mathf.MoveTowards(stamina, target, Time.deltaTime / duration);
+        if (staminaSlider != null)
+        {
+            staminaSlider.SetValueWithoutNotify(stamina);
+        }
+    }
+
+    private void Move(Vector2 movement, bool isRunning)
     {
         if (isLyingDown || movement.sqrMagnitude <= 0f)
         {
             return;
         }
 
-        bool canRun = carryItemType == DogCarryItemType.None && runMode;
-        float speed = canRun ? runSpeed : walkSpeed;
+        float speed = isRunning ? runSpeed : walkSpeed;
         transform.position += (Vector3)(movement * speed * Time.deltaTime);
     }
 
-    private void UpdateAnimation(bool isMoving)
+    private void UpdateAnimation(bool isMoving, bool isRunning = false)
     {
-        string stateName = ResolveAnimationName(isMoving);
+        string stateName = ResolveAnimationName(isMoving, isRunning);
         int stateHash = Animator.StringToHash(stateName);
         if (stateHash == currentStateHash)
         {
@@ -238,7 +273,7 @@ public sealed class DogController : MonoBehaviour
         currentStateHash = stateHash;
     }
 
-    private string ResolveAnimationName(bool isMoving)
+    private string ResolveAnimationName(bool isMoving, bool isRunning)
     {
         if (isLyingDown)
         {
@@ -255,7 +290,7 @@ public sealed class DogController : MonoBehaviour
             return (isMoving ? "pillow" : "pillow_idle") + facingDirection;
         }
 
-        string normalState = isMoving ? (runMode ? "dog_run" : "dog_walk") : "dog_idle";
+        string normalState = isMoving ? (isRunning ? "dog_run" : "dog_walk") : "dog_idle";
         return normalState + facingDirection;
     }
 
